@@ -1,14 +1,19 @@
-import { test as setup } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage';
+import { test as setup, expect } from '@playwright/test';
+import { AuthHelper } from '../helpers/AuthHelper';
+import { HomePage } from '../pages/HomePage';
 import { TEST_USERS } from '../test-data/users';
-import { AUTH_FILE } from '../infrastructure/constants';
+import { AUTH_FILE, URLS } from '../infrastructure/constants';
 
+// Logs in once and saves the session so UI tests can reuse it instead of logging in each time.
 setup('authenticate as standard user', async ({ page }) => {
-  const loginPage = new LoginPage(page);
+  const auth = new AuthHelper(page);
+  const home = new HomePage(page);
 
-  await loginPage.navigate();
-  await loginPage.login(TEST_USERS.standard.email, TEST_USERS.standard.password);
+  await auth.loginAs(TEST_USERS.standard.email, TEST_USERS.standard.password);
 
-  await page.waitForURL('/');
+  // Guard: only persist the session once we've confirmed authentication really succeeded.
+  await page.waitForURL(URLS.home);
+  await expect(home.navbar.loggedInAs).toBeVisible();
+
   await page.context().storageState({ path: AUTH_FILE });
 });

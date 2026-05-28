@@ -1,15 +1,9 @@
 import { BasePage } from './BasePage';
-import { NavbarComponent } from '../components/NavbarComponent';
+import { URLS } from '../infrastructure/constants';
 
+// navbar is inherited from BasePage (it's global to the site).
 export class HomePage extends BasePage {
-  readonly navbar: NavbarComponent;
-
-  constructor(page: ConstructorParameters<typeof BasePage>[0]) {
-    super(page);
-    this.navbar = new NavbarComponent(page);
-  }
-
   async navigate() {
-    await this.page.goto('/');
+    await this.page.goto(URLS.home);
   }
 }

@@ -1,3 +1,6 @@
+import { uniqueEmail, uniqueId } from './identity';
+
+/** Shape of a user as filled through the signup UI. */
 export type NewUser = {
   name: string;
   email: string;
@@ -12,11 +15,11 @@ export type NewUser = {
   mobileNumber: string;
 };
 
+/** Builds a valid UI user with sensible defaults; pass `overrides` to vary a single field per test. */
 export function generateNewUser(overrides: Partial<NewUser> = {}): NewUser {
-  const id = Date.now();
   return {
-    name: `Test User ${id}`,
-    email: `testuser${id}@mail.com`,
+    name: `Test User ${uniqueId()}`,
+    email: uniqueEmail(),
     password: 'Test@12345',
     firstName: 'Test',
     lastName: 'User',

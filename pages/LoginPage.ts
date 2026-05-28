@@ -1,20 +1,16 @@
-import { Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { URLS } from '../infrastructure/constants';
 
+// Locators are defined as field initializers — concise, and Playwright locators are lazy anyway.
 export class LoginPage extends BasePage {
-  readonly emailInput: Locator;
-  readonly passwordInput: Locator;
-  readonly loginButton: Locator;
-
-  constructor(page: ConstructorParameters<typeof BasePage>[0]) {
-    super(page);
-    this.emailInput = page.getByTestId('login-email');
-    this.passwordInput = page.getByTestId('login-password');
-    this.loginButton = page.getByRole('button', { name: /Login/i });
-  }
+  readonly emailInput = this.page.getByTestId('login-email');
+  readonly passwordInput = this.page.getByTestId('login-password');
+  readonly loginButton = this.page.getByRole('button', { name: /Login/i });
+  // Shown on failed login: "Your email or password is incorrect!"
+  readonly errorMessage = this.page.getByText(/email or password is incorrect/i);
 
   async navigate() {
-    await this.page.goto('/login');
+    await this.page.goto(URLS.login);
   }
 
   async login(email: string, password: string) {

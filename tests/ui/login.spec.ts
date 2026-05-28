@@ -1,5 +1,6 @@
 import { test, expect } from '../../fixtures/test-fixtures';
 import { TEST_USERS } from '../../test-data/users';
+import { uniqueEmail } from '../../test-data/identity';
 
 test('valid credentials redirect to homepage', async ({ loginPage }) => {
   // Arrange
@@ -25,4 +26,17 @@ test('user navigates from homepage via navbar and logs in', async ({ homePage, l
 
   // Assert
   await expect(loginPage.page).toHaveURL('/');
+});
+
+test('invalid credentials display an error and stay on the login page', async ({ loginPage }) => {
+  // Arrange — a guaranteed-unknown account, so this test needs no real credentials
+  const email = uniqueEmail();
+
+  // Act
+  await loginPage.navigate();
+  await loginPage.login(email, 'wrong-password');
+
+  // Assert
+  await expect(loginPage.errorMessage).toBeVisible();
+  await expect(loginPage.page).toHaveURL(/login/);
 });

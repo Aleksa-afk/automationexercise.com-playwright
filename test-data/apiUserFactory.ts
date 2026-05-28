@@ -1,3 +1,6 @@
+import { uniqueEmail, uniqueId } from './identity';
+
+/** Shape of the /api/createAccount payload (note the API's snake_case field names). */
 export type ApiUser = {
   name: string;
   email: string;
@@ -18,11 +21,11 @@ export type ApiUser = {
   mobile_number: string;
 };
 
+/** Builds a valid API user with sensible defaults; pass `overrides` to vary a single field per test. */
 export function generateApiUser(overrides: Partial<ApiUser> = {}): ApiUser {
-  const id = Date.now();
   return {
-    name: `Test User ${id}`,
-    email: `testuser${id}@mail.com`,
+    name: `Test User ${uniqueId()}`,
+    email: uniqueEmail(),
     password: 'Test@12345',
     title: 'Mr',
     birth_date: '1',

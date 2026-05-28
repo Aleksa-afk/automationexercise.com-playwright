@@ -1,38 +1,45 @@
 import { BasePage } from './BasePage';
+import { URLS } from '../infrastructure/constants';
 import { NewUser } from '../test-data/userFactory';
 
+// Two-step flow: (1) submit name+email -> account-info form, (2) fill details -> /account_created.
+// Locators are grouped by step to keep this large form readable.
 export class SignupPage extends BasePage {
   readonly signup = {
-    nameInput:  this.page.getByTestId('signup-name'),
+    nameInput: this.page.getByTestId('signup-name'),
     emailInput: this.page.getByTestId('signup-email'),
-    button:     this.page.getByRole('button', { name: /Signup/i }),
+    button: this.page.getByRole('button', { name: /Signup/i }),
   };
 
   readonly accountDetails = {
-    password:     this.page.getByTestId('password'),
-    firstName:    this.page.getByTestId('first_name'),
-    lastName:     this.page.getByTestId('last_name'),
-    address:      this.page.getByTestId('address'),
-    country:      this.page.getByTestId('country'),
-    state:        this.page.getByTestId('state'),
-    city:         this.page.getByTestId('city'),
-    zipcode:      this.page.getByTestId('zipcode'),
+    // Carried over from step 1: name is pre-filled & editable, email is pre-filled & disabled.
+    name: this.page.getByTestId('name'),
+    email: this.page.getByTestId('email'),
+    password: this.page.getByTestId('password'),
+    firstName: this.page.getByTestId('first_name'),
+    lastName: this.page.getByTestId('last_name'),
+    address: this.page.getByTestId('address'),
+    country: this.page.getByTestId('country'),
+    state: this.page.getByTestId('state'),
+    city: this.page.getByTestId('city'),
+    zipcode: this.page.getByTestId('zipcode'),
     mobileNumber: this.page.getByTestId('mobile_number'),
     createButton: this.page.getByRole('button', { name: /Create Account/i }),
   };
 
   async navigate() {
-    await this.page.goto('/signup');
+    await this.page.goto(URLS.signup);
   }
 
-  async signUp(name: string, email: string): Promise<this> {
+  /** Step 1: submit name + email to reach the account-information form. */
+  async signUp(name: string, email: string) {
     await this.signup.nameInput.fill(name);
     await this.signup.emailInput.fill(email);
     await this.signup.button.click();
-    return this;
   }
 
-  async fillAccountDetails(details: NewUser): Promise<this> {
+  /** Step 2: fill the account-information form and submit to create the account. */
+  async submitAccountDetails(details: NewUser) {
     const f = this.accountDetails;
     await f.password.fill(details.password);
     await f.firstName.fill(details.firstName);
@@ -44,6 +51,5 @@ export class SignupPage extends BasePage {
     await f.zipcode.fill(details.zipcode);
     await f.mobileNumber.fill(details.mobileNumber);
     await f.createButton.click();
-    return this;
   }
 }
