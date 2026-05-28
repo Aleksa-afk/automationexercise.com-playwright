@@ -18,9 +18,9 @@ test('new user can register with valid details', async ({ signupPage }) => {
   await signupPage.signUp(user.name, user.email);
 
   // Assert (pre-filled data carried over from step 1)
-  await expect(signupPage.nameInput).toHaveValue(user.name);
-  await expect(signupPage.emailInput).toHaveValue(user.email);
-  await expect(signupPage.emailInput).toBeDisabled();
+  await expect(signupPage.signup.nameInput).toHaveValue(user.name);
+  await expect(signupPage.signup.emailInput).toHaveValue(user.email);
+  await expect(signupPage.signup.emailInput).toBeDisabled();
 
   // Act (complete account details)
   await signupPage.fillAccountDetails(user);
