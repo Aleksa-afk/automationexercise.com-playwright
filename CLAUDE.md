@@ -21,7 +21,7 @@ Do not over-explain basic concepts unless asked. Focus on production-quality out
 - **Language:** TypeScript
 - **Framework:** Playwright (latest)
 - **Test runner:** Playwright Test (@playwright/test)
-- **Reporting:** Allure (if configured) or Playwright HTML reporter
+- **Reporting:** Playwright HTML reporter
 - **Node version:** LTS
 
 ---
@@ -131,38 +131,24 @@ test('valid login navigates to account page', async ({ loginPage }) => {
 
 ```typescript
 // pages/LoginPage.ts
-import { Page, Locator } from '@playwright/test';
+import { BasePage } from './BasePage';
+import { URLS } from '../infrastructure/constants';
 
-export class LoginPage {
-  readonly page: Page;
-
-  // Locators defined as properties — easy to update if selectors change
-  readonly emailInput: Locator;
-  readonly passwordInput: Locator;
-  readonly submitButton: Locator;
-  readonly errorMessage: Locator;
-
-  constructor(page: Page) {
-    this.page = page;
-    // Prefer role-based and label-based selectors over CSS/XPath
-    this.emailInput = page.getByRole('textbox', { name: /email/i });
-    this.passwordInput = page.getByRole('textbox', { name: /password/i });
-    this.submitButton = page.getByRole('button', { name: /login/i });
-    this.errorMessage = page.locator('.login-form p').filter({ hasText: /incorrect|invalid/i });
-  }
+export class LoginPage extends BasePage {
+  // Field initializers — Playwright locators are lazy, so this is concise and correct
+  readonly emailInput = this.page.getByTestId('login-email');
+  readonly passwordInput = this.page.getByTestId('login-password');
+  readonly loginButton = this.page.getByRole('button', { name: /Login/i });
+  readonly errorMessage = this.page.getByText(/email or password is incorrect/i);
 
   async navigate() {
-    await this.page.goto('/login');
+    await this.page.goto(URLS.login);
   }
 
   async login(email: string, password: string) {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
-    await this.submitButton.click();
-  }
-
-  async getErrorText(): Promise<string | null> {
-    return this.errorMessage.textContent();
+    await this.loginButton.click();
   }
 }
 ```
@@ -207,11 +193,11 @@ test('login with valid credentials', async ({ loginPage }) => {
 
 ### 4. Selector priority order
 
-Always use selectors in this priority order:
+For **automationexercise.com**, `data-qa` attributes are mapped via `testIdAttribute` in `playwright.config.ts`. When they exist, use them first — they are the most stable hook on the page.
 
-1. `getByRole()` — most resilient, semantically meaningful
-2. `getByLabel()` — for form fields with associated labels
-3. `getByTestId()` — when data-testid attributes exist
+1. `getByTestId()` — highest priority when a `data-qa` attribute exists
+2. `getByRole()` — for interactive elements without a `data-qa` hook
+3. `getByLabel()` — for form fields with associated labels
 4. `getByText()` — for text content assertions
 5. `locator('css')` — only when nothing above works
 6. Never use XPath unless absolutely unavoidable
@@ -269,16 +255,53 @@ Each test must be independently runnable. Tests must not depend on execution ord
 
 The playwright.config.ts must always have `retries: 0`. A flaky test must be fixed, not retried.
 
+### 11. Use test.step() for multi-step flows
+
+Wrap distinct phases of a multi-step test in `test.step()`. Steps appear as named sections in the HTML report and give precise failure locations.
+
+```typescript
+test('new user can register with valid details', { tag: '@smoke' }, async ({ signupPage }) => {
+  const user = generateNewUser();
+
+  await test.step('submit name and email', async () => {
+    await signupPage.navigate();
+    await signupPage.signUp(user.name, user.email);
+    await expect(signupPage.accountDetails.email).toBeDisabled();
+  });
+
+  await test.step('complete account details and confirm account created', async () => {
+    await signupPage.submitAccountDetails(user);
+    await expect(signupPage.page).toHaveURL('/account_created');
+  });
+});
+```
+
+Use `test.step()` when a test has two or more distinct Act phases that would otherwise need multiple AAA comment blocks.
+
+### 12. Test tags for suite filtering
+
+Tag every test with `@smoke` or `@regression` using the `{ tag }` option.
+
+```typescript
+test('valid credentials redirect to homepage', { tag: '@smoke' }, async ({ loginPage }) => { ... });
+test('invalid credentials display an error', { tag: '@regression' }, async ({ loginPage }) => { ... });
+```
+
+Run a subset: `npx playwright test --grep @smoke`
+
+- `@smoke`: critical happy-path tests — the minimum set that confirms the build is healthy
+- `@regression`: negative cases, edge cases, and secondary flows
+
 ---
 
 ## Selector Strategy for automationexercise.com
 
 This site has inconsistent attributes. Use these strategies:
 
-- Form inputs: use `getByPlaceholder()` — the site uses placeholder text consistently
+- Form inputs: use `getByTestId()` — the site has `data-qa` attributes on all major inputs
 - Buttons: use `getByRole('button', { name: /text/i })`
 - Navigation links: use `getByRole('link', { name: /text/i })`
-- Error messages: inspect and use `.locator('p').filter({ hasText: /error text/i })`
+- Error messages: use `getByText(/error text/i)` or `.locator('p').filter({ hasText: /error text/i })`
 - Social login buttons: avoid — not testable
 
 ---
@@ -290,13 +313,12 @@ This site has inconsistent attributes. Use these strategies:
 - Never hardcode credentials inline in test files
 
 ```typescript
-// test-data/users.ts
+// test-data/users.ts — credentials come from env via config, never hardcoded
 export const TEST_USERS = {
   standard: {
-    email: 'aleksa_test@mailinator.com',
-    password: 'Test1234!',
-    name: 'Aleksa Test'
-  }
+    get email(): string { return config.loginEmail; },
+    get password(): string { return config.loginPassword; },
+  },
 };
 ```
 
@@ -323,6 +345,14 @@ export const TEST_USERS = {
 - "Explain why fixtures are better than beforeEach for page object injection"
 - "When should I use beforeAll vs beforeEach?"
 - "What is the correct way to handle authentication state in Playwright across tests?"
+
+---
+
+## CI
+
+Tests run inside the official Playwright Docker container. The image tag is pinned to the `@playwright/test` version — **both must be kept in sync**. When upgrading `@playwright/test` in `package.json`, update the container image tag in `.github/workflows/playwright.yml` at the same time.
+
+Current image: `mcr.microsoft.com/playwright:v1.59.1-noble`
 
 ---
 

@@ -11,7 +11,8 @@
     "test:debug": "playwright test --debug",
     "report": "playwright show-report",
     "codegen": "playwright codegen https://automationexercise.com",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,9 @@
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
     "dotenv": "^17.4.2",
-    "typescript": "^6.0.3"
+    "eslint": "^9.39.4",
+    "eslint-plugin-playwright": "^2.10.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0"
   }
 }
